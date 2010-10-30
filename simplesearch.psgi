@@ -80,7 +80,6 @@ sub render {
 # Logic
 sub search_user {
     my ($query, $access_token)  = @_;
-    api()->access_token( $access_token );
     my $response
         = api()->query->search( $query, 'user' )->limit_results(10)->request;
     my $json_response = eval { $response->as_json; };
@@ -127,7 +126,9 @@ my $app = router {
         my ( $req, $match ) = @_;
 
         if($req->param('q')) {
-            my $users = search_user( $req->param('q'), $req->param('access_token') );
+            my $access_token = $req->param('access_token');
+            api()->access_token( $access_token );
+            my $users = search_user( $req->param('q') );
             render( 'search.tt', { users => $users }, $req );
         } else {
             render('search.tt', {}, $req);
