@@ -79,7 +79,8 @@ sub render {
 
 # Logic
 sub search_user {
-    my $query = shift;
+    my ($query, $access_token)  = @_;
+    api()->access_token( $access_token );
     my $response
         = api()->query->search( $query, 'user' )->limit_results(10)->request;
     my $json_response = eval { $response->as_json; };
@@ -97,11 +98,16 @@ sub authorization_uri {
                 ->uri_as_string;
 }
 
-sub authorized_search_uri {
+sub get_access_token {
     my $code = shift;
     api()->request_access_token( $code );
+    api()->access_token;
+}
+
+sub authorized_search_uri {
+    my $access_token = shift; 
     my $uri = URI->new($BASE_URI . '/search');
-    $uri->query_form( access_token => api()->access_token );
+    $uri->query_form( access_token => $access_token );
     $uri->as_string;
 }
 
@@ -113,13 +119,19 @@ my $app = router {
     },
     get '/postback' => sub {
         my ( $req, $match ) = @_;
-        my $search_uri = authorized_search_uri($req->param('code'));
+        my $access_token = get_access_token($req->param('code'));
+        my $search_uri = authorized_search_uri($access_token);
         redirect( $search_uri );
     },
     get '/search' => sub {
         my ( $req, $match ) = @_;
-        my $users = search_user( $req->param('q') );
-        render( 'search.tt', { users => $users }, $req );
+
+        if($req->param('q')) {
+            my $users = search_user( $req->param('q'), $req->param('access_token') );
+            render( 'search.tt', { users => $users }, $req );
+        } else {
+            render('search.tt', {}, $req);
+        }
     }
 };
 
