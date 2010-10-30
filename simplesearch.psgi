@@ -79,7 +79,7 @@ sub render {
 
 # Logic
 sub search_user {
-    my ($query, $access_token)  = @_;
+    my $query = shift;
     my $response
         = api()->query->search( $query, 'user' )->limit_results(10)->request;
     my $json_response = eval { $response->as_json; };
